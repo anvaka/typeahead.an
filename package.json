@@ -1,0 +1,22 @@
+{
+  "name": "typeahead.sj",
+  "version": "0.0.0",
+  "description": "Typeahead directive for angular",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "angular",
+    "typeahead",
+    "autosuggest",
+    "directive",
+    "sj"
+  ],
+  "author": "Andrei Kashcha",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anvaka/typeahead.sj"
+  }
+}
