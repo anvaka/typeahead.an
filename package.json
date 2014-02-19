@@ -1,5 +1,5 @@
 {
-  "name": "typeahead.sj",
+  "name": "typeahead.an",
   "version": "0.0.0",
   "description": "Typeahead directive for angular",
   "main": "index.js",
@@ -13,10 +13,19 @@
     "directive",
     "sj"
   ],
+  "browserify": {
+    "transform": [
+      "brfs"
+    ]
+  },
   "author": "Andrei Kashcha",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/anvaka/typeahead.sj"
+  },
+  "dependencies": {
+    "an": "0.0.0",
+    "brfs": "~0.2.1"
   }
 }

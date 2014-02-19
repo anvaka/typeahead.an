@@ -1,4 +1,4 @@
-# typeahead.sj
+# typeahead.an
 
 Typeahead directive for angular
 
@@ -7,7 +7,7 @@ Typeahead directive for angular
 With [npm](https://npmjs.org) do:
 
 ```
-npm install typeahead.sj
+npm install typeahead.an
 ```
 
 # license
