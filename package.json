@@ -1,6 +1,6 @@
 {
   "name": "typeahead.an",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Typeahead directive for angular",
   "main": "index.js",
   "scripts": {
@@ -25,7 +25,7 @@
     "url": "https://github.com/anvaka/typeahead.sj"
   },
   "dependencies": {
-    "an": "0.0.0",
+    "an": "~0.0.0",
     "brfs": "~0.2.1"
   }
 }
