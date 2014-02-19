@@ -4,6 +4,8 @@ require('./lib/popup'); // we need popup
 require('an').directive(typeahead); // export this as directive;
 
 function typeahead($compile, $parse, $q, $timeout, $document) {
+  
+  // yes, we can use regular common js packages:
   var $position = require('./lib/utils/position')(document, window);
   var HOT_KEYS = [9, 13, 27, 38, 40];
 
