@@ -1,6 +1,6 @@
 {
   "name": "typeahead.an",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Typeahead directive for angular",
   "main": "index.js",
   "scripts": {
