@@ -4,14 +4,14 @@ require('./lib/popup'); // we need popup
 require('an').directive(typeahead); // delay directive registration as much as we can
 
 function typeahead($compile, $parse, $q, $timeout, $document) {
-  
+
   // yes, we can use regular common js packages:
   var $position = require('./lib/utils/position')(document, window);
   var HOT_KEYS = [9, 13, 27, 38, 40];
 
   return {
-    require:'ngModel',
-    link:function (originalScope, element, attrs, modelCtrl) {
+    require: 'ngModel',
+    link: function(originalScope, element, attrs, modelCtrl) {
 
       //SUPPORTED ATTRIBUTES (OPTIONS)
 
@@ -32,7 +32,7 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
 
       var inputFormatter = attrs.typeaheadInputFormatter ? $parse(attrs.typeaheadInputFormatter) : undefined;
 
-      var appendToBody =  attrs.typeaheadAppendToBody ? originalScope.$eval(attrs.typeaheadAppendToBody) : false;
+      var appendToBody = attrs.typeaheadAppendToBody ? originalScope.$eval(attrs.typeaheadAppendToBody) : false;
 
       //INTERNAL VARIABLES
 
@@ -49,20 +49,20 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
       var popUpEl = angular.element('<div typeahead-popup></div>');
       popUpEl.attr({
         matches: 'matches',
-        active: 'activeIdx',
-        select: 'select(activeIdx)',
         query: 'query',
         position: 'position'
       });
+
       //custom item template
+      var templateUrl;
       if (angular.isDefined(attrs.typeaheadTemplateUrl)) {
-        popUpEl.attr('template-url', attrs.typeaheadTemplateUrl);
+        templateUrl = attrs.typeaheadTemplateUrl;
       }
 
       //create a child scope for the typeahead directive so we are not polluting original scope
       //with typeahead-specific data (matches, query etc.)
       var scope = originalScope.$new();
-      originalScope.$on('$destroy', function(){
+      originalScope.$on('$destroy', function() {
         scope.$destroy();
       });
 
@@ -71,9 +71,41 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
         scope.activeIdx = -1;
       };
 
-      var getMatchesAsync = function(inputValue) {
+      function selectActive(index) {
+        var item = scope.matches[scope.activeIdx];
+        if (item) item.isActive = false;
 
-        var locals = {$viewValue: inputValue};
+        scope.activeIdx = index;
+
+        item = scope.matches[index];
+        if (item) item.isActive = true;
+      }
+
+      function selectMatch(activeIdx) {
+        var locals = {};
+        var model, item;
+
+        locals[parserResult.itemName] = item = scope.matches[activeIdx].model;
+        model = parserResult.modelMapper(originalScope, locals);
+        $setModelValue(originalScope, model);
+        modelCtrl.$setValidity('editable', true);
+
+        onSelectCallback(originalScope, {
+          $item: item,
+          $model: model,
+          $label: parserResult.viewMapper(originalScope, locals)
+        });
+
+        resetMatches();
+
+        //return focus to the input element if a match was selected via a mouse click event
+        element[0].focus();
+      }
+
+      function getMatchesAsync(inputValue) {
+        var locals = {
+          $viewValue: inputValue
+        };
         isLoadingSetter(originalScope, true);
         $q.when(parserResult.source(originalScope, locals)).then(function(matches) {
 
@@ -86,11 +118,15 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
               scope.matches.length = 0;
 
               //transform labels
-              for(var i=0; i<matches.length; i++) {
+              for (var i = 0; i < matches.length; i++) {
                 locals[parserResult.itemName] = matches[i];
                 scope.matches.push({
                   label: parserResult.viewMapper(scope, locals),
-                  model: matches[i]
+                  selectMatch: selectMatch,
+                  selectActive: selectActive,
+                  templateUrl: templateUrl,
+                  model: matches[i],
+                  isActive: i === 0
                 });
               }
 
@@ -106,7 +142,7 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
             }
             isLoadingSetter(originalScope, false);
           }
-        }, function(){
+        }, function() {
           resetMatches();
           isLoadingSetter(originalScope, false);
         });
@@ -117,21 +153,21 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
       //we need to propagate user's query so we can higlight matches
       scope.query = undefined;
 
-      //Declare the timeout promise var outside the function scope so that stacked calls can be cancelled later 
+      //Declare the timeout promise var outside the function scope so that stacked calls can be cancelled later
       var timeoutPromise;
 
       //plug into $parsers pipeline to open a typeahead on view changes initiated from DOM
       //$parsers kick-in on all the changes coming from the view as well as manually triggered by $setViewValue
-      modelCtrl.$parsers.unshift(function (inputValue) {
+      modelCtrl.$parsers.unshift(function(inputValue) {
 
         hasFocus = true;
 
         if (inputValue && inputValue.length >= minSearch) {
           if (waitTime > 0) {
             if (timeoutPromise) {
-              $timeout.cancel(timeoutPromise);//cancel previous timeout
+              $timeout.cancel(timeoutPromise); //cancel previous timeout
             }
-            timeoutPromise = $timeout(function () {
+            timeoutPromise = $timeout(function() {
               getMatchesAsync(inputValue);
             }, waitTime);
           } else {
@@ -156,7 +192,7 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
         }
       });
 
-      modelCtrl.$formatters.push(function (modelValue) {
+      modelCtrl.$formatters.push(function(modelValue) {
 
         var candidateViewValue, emptyViewValue;
         var locals = {};
@@ -175,34 +211,14 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
           locals[parserResult.itemName] = undefined;
           emptyViewValue = parserResult.viewMapper(originalScope, locals);
 
-          return candidateViewValue!== emptyViewValue ? candidateViewValue : modelValue;
+          return candidateViewValue !== emptyViewValue ? candidateViewValue : modelValue;
         }
       });
 
-      scope.select = function (activeIdx) {
-        //called from within the $digest() cycle
-        var locals = {};
-        var model, item;
-
-        locals[parserResult.itemName] = item = scope.matches[activeIdx].model;
-        model = parserResult.modelMapper(originalScope, locals);
-        $setModelValue(originalScope, model);
-        modelCtrl.$setValidity('editable', true);
-
-        onSelectCallback(originalScope, {
-          $item: item,
-          $model: model,
-          $label: parserResult.viewMapper(originalScope, locals)
-        });
-
-        resetMatches();
-
-        //return focus to the input element if a mach was selected via a mouse click event
-        element[0].focus();
-      };
+      scope.select = selectMatch;
 
       //bind keyboard events: arrows up(38) / down(40), enter(13) and tab(9), esc(27)
-      element.bind('keydown', function (evt) {
+      element.bind('keydown', function(evt) {
 
         //typeahead is open and an "interesting" key was pressed
         if (scope.matches.length === 0 || HOT_KEYS.indexOf(evt.which) === -1) {
@@ -210,17 +226,17 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
         }
 
         evt.preventDefault();
+        var item;
 
         if (evt.which === 40) {
-          scope.activeIdx = (scope.activeIdx + 1) % scope.matches.length;
+          selectActive((scope.activeIdx + 1) % scope.matches.length);
           scope.$digest();
 
         } else if (evt.which === 38) {
-          scope.activeIdx = (scope.activeIdx ? scope.activeIdx : scope.matches.length) - 1;
+          selectActive((scope.activeIdx ? scope.activeIdx : scope.matches.length) - 1);
           scope.$digest();
-
         } else if (evt.which === 13 || evt.which === 9) {
-          scope.$apply(function () {
+          scope.$apply(function() {
             scope.select(scope.activeIdx);
           });
 
@@ -232,12 +248,12 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
         }
       });
 
-      element.bind('blur', function (evt) {
+      element.bind('blur', function(evt) {
         hasFocus = false;
       });
 
       // Keep reference to click handler to unbind it.
-      var dismissClickHandler = function (evt) {
+      var dismissClickHandler = function(evt) {
         if (element[0] !== evt.target) {
           resetMatches();
           scope.$digest();
@@ -246,12 +262,12 @@ function typeahead($compile, $parse, $q, $timeout, $document) {
 
       $document.bind('click', dismissClickHandler);
 
-      originalScope.$on('$destroy', function(){
+      originalScope.$on('$destroy', function() {
         $document.unbind('click', dismissClickHandler);
       });
 
       var $popup = $compile(popUpEl)(scope);
-      if ( appendToBody ) {
+      if (appendToBody) {
         $document.find('body').append($popup);
       } else {
         element.after($popup);

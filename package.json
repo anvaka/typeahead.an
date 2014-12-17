@@ -25,7 +25,8 @@
     "url": "https://github.com/anvaka/typeahead.an"
   },
   "dependencies": {
-    "brfs": "~0.2.1",
-    "an": "~0.0.0"
+    "an": "~0.0.0",
+    "angular": "^1.3.7",
+    "brfs": "~0.2.1"
   }
 }
